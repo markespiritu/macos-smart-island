@@ -8,10 +8,10 @@ enum IslandMetrics {
     /// How far the island extends past each side of the notch.
     static let sideOverhang: CGFloat = 10
     static let fontSize: CGFloat = 15
-    /// Size of the outward (concave) curve where the island meets the top of the screen.
-    static let shoulderRadius: CGFloat = 8
-    /// Radius of the big soft bottom corners.
-    static let bottomRadius: CGFloat = 18
+    /// Radius used for both the shoulder curves (where the island meets the menu bar) and the bottom corners.
+    static let cornerRadius: CGFloat = 32
+    static var shoulderRadius: CGFloat { cornerRadius }
+    static var bottomRadius: CGFloat { cornerRadius }
     /// Dropping the island within this many points of the notch snaps it back.
     static let snapDistance: CGFloat = 24
 }
@@ -86,23 +86,36 @@ struct IslandShape: Shape {
         var p = Path()
         if shoulder > 0.01 {
             p.move(to: CGPoint(x: left - shoulder, y: top))
-            p.addQuadCurve(to: CGPoint(x: left, y: top + shoulder), control: CGPoint(x: left, y: top))
+            p.addCorner(to: CGPoint(x: left, y: top + shoulder), corner: CGPoint(x: left, y: top))
         } else {
             p.move(to: CGPoint(x: left + topConvex, y: top))
-            p.addQuadCurve(to: CGPoint(x: left, y: top + topConvex), control: CGPoint(x: left, y: top))
+            p.addCorner(to: CGPoint(x: left, y: top + topConvex), corner: CGPoint(x: left, y: top))
         }
         p.addLine(to: CGPoint(x: left, y: h - bottom))
-        p.addQuadCurve(to: CGPoint(x: left + bottom, y: h), control: CGPoint(x: left, y: h))
+        p.addCorner(to: CGPoint(x: left + bottom, y: h), corner: CGPoint(x: left, y: h))
         p.addLine(to: CGPoint(x: right - bottom, y: h))
-        p.addQuadCurve(to: CGPoint(x: right, y: h - bottom), control: CGPoint(x: right, y: h))
+        p.addCorner(to: CGPoint(x: right, y: h - bottom), corner: CGPoint(x: right, y: h))
         if shoulder > 0.01 {
             p.addLine(to: CGPoint(x: right, y: top + shoulder))
-            p.addQuadCurve(to: CGPoint(x: right + shoulder, y: top), control: CGPoint(x: right, y: top))
+            p.addCorner(to: CGPoint(x: right + shoulder, y: top), corner: CGPoint(x: right, y: top))
         } else {
             p.addLine(to: CGPoint(x: right, y: top + topConvex))
-            p.addQuadCurve(to: CGPoint(x: right - topConvex, y: top), control: CGPoint(x: right, y: top))
+            p.addCorner(to: CGPoint(x: right - topConvex, y: top), corner: CGPoint(x: right, y: top))
         }
         p.closeSubpath()
         return p
+    }
+}
+
+private extension Path {
+    /// Rounds a 90° corner with a circular arc (cubic Bézier approximation), going from the
+    /// current point to `end`, bending around `corner`. Unlike a quad curve, the bend is spread
+    /// evenly, so neighbouring curves meet cleanly.
+    mutating func addCorner(to end: CGPoint, corner: CGPoint) {
+        guard let start = currentPoint else { return }
+        let k: CGFloat = 0.5523 // 4/3 * (sqrt(2) - 1)
+        let c1 = CGPoint(x: start.x + (corner.x - start.x) * k, y: start.y + (corner.y - start.y) * k)
+        let c2 = CGPoint(x: end.x + (corner.x - end.x) * k, y: end.y + (corner.y - end.y) * k)
+        addCurve(to: end, control1: c1, control2: c2)
     }
 }
