@@ -4,8 +4,9 @@ A thin clock that sits right under the MacBook notch, so you can check the time 
 
 - Shows only on the MacBook's built-in screen, never on an external monitor.
 - Stays visible on every desktop and over full-screen apps.
-- Black pill that merges into the notch. Drag it anywhere on the laptop screen, and double-click it (or use **Reset Position**) to snap it back.
-- Menu bar icon (clock): Show Clock, 24-Hour Time, Show Seconds, Reset Position, Launch at Login, Quit.
+- Merges into the notch: solid black across the menu bar, with a dark Liquid Glass strip below that fades out (switch to solid black with **Glass Style**).
+- Clicks pass through to the window underneath; hold ⌘ and drag to move the island (⌘ double-click, or **Reset Position**, to snap it back).
+- Menu bar icon (clock): Show Clock, 24-Hour Time, Show Seconds, Glass Style, Reset Position, Launch at Login, Quit.
 
 ## Requirements
 
@@ -25,4 +26,4 @@ For development you can also run `swift run`, or open `Package.swift` in Xcode a
 
 ## Tweaking the size
 
-The strip's height, font size and fallback width are in `IslandMetrics` in `Sources/SmartIsland/ClockView.swift`.
+The strip's height, corner radii, glass tint and fade, font size, move modifier and fallback width are in `IslandMetrics` in `Sources/SmartIsland/ClockView.swift`.
