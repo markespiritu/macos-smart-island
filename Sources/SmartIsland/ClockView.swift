@@ -66,16 +66,22 @@ struct IslandBackground: View {
 
     var body: some View {
         if glass {
-            if #available(macOS 26, *) {
-                ZStack {
+            ZStack {
+                if #available(macOS 26, *) {
                     Color.clear.glassEffect(.regular, in: shape)
-                    shape.fill(Color.black.opacity(IslandMetrics.glassTint))
-                }
-            } else {
-                ZStack {
+                } else {
                     Color.clear.background(.ultraThinMaterial, in: shape)
-                    shape.fill(Color.black.opacity(IslandMetrics.glassTint))
                 }
+                shape.fill(Color.black.opacity(IslandMetrics.glassTint))
+                // The part level with the menu bar (everything above the clock strip, including
+                // the shoulders) stays solid black so it blends with the notch; only the strip
+                // below the menu bar is glass.
+                shape.fill(Color.black)
+                    .mask(alignment: .top) {
+                        GeometryReader { geo in
+                            Rectangle().frame(height: max(0, geo.size.height - shape.stripHeight))
+                        }
+                    }
             }
         } else {
             shape.fill(Color.black)
