@@ -1,8 +1,9 @@
+import AppKit
 import SwiftUI
 
 enum IslandMetrics {
     /// Height of the clock strip below the notch, in points. Tune this first if it feels too big or small.
-    static let height: CGFloat = 26
+    static let height: CGFloat = 34
     /// Notch width/height used when they can't be detected (e.g. a Mac without a notch).
     static let fallbackNotchWidth: CGFloat = 185
     /// How far the island extends past each side of the notch.
@@ -10,10 +11,15 @@ enum IslandMetrics {
     static let fontSize: CGFloat = 15
     /// How dark the glass is tinted (0 = clear glass, 1 = solid black).
     static let glassTint: Double = 0.75
+    /// Opacity the glass fades to at the very bottom of the island (1 = no fade).
+    static let glassFadeEndOpacity: Double = 0.1
     /// Size of the outward (concave) curve where the island meets the menu bar.
     static let shoulderRadius: CGFloat = 14
     /// Radius of the bottom corners.
     static let bottomRadius: CGFloat = 22
+    /// Hold this key to grab the island (drag to move, double-click to reset); otherwise clicks
+    /// pass through to whatever is underneath. ⌘-drag is how macOS moves background windows.
+    static let moveModifier: NSEvent.ModifierFlags = .command
     /// Dropping the island within this many points of the notch snaps it back.
     static let snapDistance: CGFloat = 24
 }
@@ -21,6 +27,8 @@ enum IslandMetrics {
 /// Live state of the island that the view animates on.
 final class IslandState: ObservableObject {
     @Published var isDragging = false
+    /// ⌘ is held with the pointer over the island, so it can be dragged.
+    @Published var isGrabbable = false
 }
 
 /// The black island with the time in it.
@@ -47,11 +55,23 @@ struct ClockView: View {
             Text(clock.text)
                 .font(.system(size: IslandMetrics.fontSize, weight: .semibold, design: .rounded).monospacedDigit())
                 .foregroundStyle(AnyShapeStyle(.white))
+                .shadow(color: .black.opacity(0.5), radius: 2)
                 .lineLimit(1)
                 .contentTransition(.numericText())
                 .animation(.smooth(duration: 0.35), value: clock.text)
                 .frame(maxWidth: .infinity)
                 .frame(height: IslandMetrics.height)
+        }
+        // Subtle outline while the island can be grabbed (⌘ held over it).
+        .overlay {
+            IslandShape(
+                shoulderRadius: IslandMetrics.shoulderRadius,
+                bottomRadius: IslandMetrics.bottomRadius,
+                stripHeight: IslandMetrics.height,
+                docked: docked ? 1 : 0
+            )
+            .stroke(Color.white.opacity(state.isGrabbable ? 0.25 : 0), lineWidth: 1)
+            .animation(.easeOut(duration: 0.15), value: state.isGrabbable)
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: docked)
         .animation(.smooth(duration: 0.3), value: settings.useGlass)
@@ -67,12 +87,29 @@ struct IslandBackground: View {
     var body: some View {
         if glass {
             ZStack {
-                if #available(macOS 26, *) {
-                    Color.clear.glassEffect(.regular, in: shape)
-                } else {
-                    Color.clear.background(.ultraThinMaterial, in: shape)
+                // Glass + tint, fading from fully opaque at the bottom of the menu bar to nearly
+                // clear at the bottom of the island (the floating pill fades the same way).
+                ZStack {
+                    if #available(macOS 26, *) {
+                        Color.clear.glassEffect(.regular, in: shape)
+                    } else {
+                        Color.clear.background(.ultraThinMaterial, in: shape)
+                    }
+                    shape.fill(Color.black.opacity(IslandMetrics.glassTint))
                 }
-                shape.fill(Color.black.opacity(IslandMetrics.glassTint))
+                .compositingGroup()
+                .mask {
+                    GeometryReader { geo in
+                        VStack(spacing: 0) {
+                            Rectangle().frame(height: max(0, geo.size.height - shape.stripHeight))
+                            LinearGradient(
+                                colors: [.white, .white.opacity(IslandMetrics.glassFadeEndOpacity)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+                    }
+                }
                 // The part level with the menu bar (everything above the clock strip, including
                 // the shoulders) stays solid black so it blends with the notch; only the strip
                 // below the menu bar is glass.

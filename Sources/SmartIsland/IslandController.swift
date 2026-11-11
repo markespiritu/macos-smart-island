@@ -11,6 +11,7 @@ final class IslandController {
     private let panel: IslandPanel
     private let state = IslandState()
     private var cancellables = Set<AnyCancellable>()
+    private var modifierTimer: Timer?
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -22,9 +23,23 @@ final class IslandController {
         let hosting = IslandHostingView(rootView: ClockView(clock: clock, settings: settings, state: state))
         hosting.sizingOptions = []
         hosting.onDragStarted = { [weak self] in self?.state.isDragging = true }
-        hosting.onDragEnded = { [weak self] in self?.dragEnded() }
+        hosting.onDragEnded = { [weak self] in
+            self?.dragEnded()
+            self?.updateClickThrough()
+        }
         hosting.onDoubleClick = { [weak self] in self?.settings.dragOffset = .zero }
         panel.contentView = hosting
+
+        // Clicks pass straight through the island to whatever is underneath, except while the
+        // move modifier (⌘) is held, which makes it draggable. Polling the modifier state is
+        // cheap and, unlike a global key monitor, needs no Accessibility permission.
+        panel.ignoresMouseEvents = true
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateClickThrough() }
+        }
+        timer.tolerance = 0.02
+        RunLoop.main.add(timer, forMode: .common)
+        modifierTimer = timer
 
         // Reposition when displays change (monitor plugged in/out, resolution, lid open/close),
         // after waking, and when the visibility or position settings change.
@@ -129,6 +144,20 @@ final class IslandController {
         frame.origin.x = min(max(frame.origin.x, bounds.minX), bounds.maxX - frame.width)
         frame.origin.y = min(max(frame.origin.y, bounds.minY), bounds.maxY - frame.height)
         return frame
+    }
+
+    /// Makes the island interactive only while the move modifier is held (or a drag is underway,
+    /// so letting go of the key mid-drag doesn't drop the island).
+    private func updateClickThrough() {
+        guard panel.isVisible else { return }
+        let held = NSEvent.modifierFlags.contains(IslandMetrics.moveModifier)
+        let over = panel.frame.contains(NSEvent.mouseLocation)
+        let grabbable = (held && over) || state.isDragging
+        if panel.ignoresMouseEvents == grabbable { panel.ignoresMouseEvents = !grabbable }
+        if state.isGrabbable != grabbable {
+            state.isGrabbable = grabbable
+            if grabbable { NSCursor.openHand.push() } else { NSCursor.pop() }
+        }
     }
 
     private func dragEnded() {

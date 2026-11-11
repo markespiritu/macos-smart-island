@@ -40,6 +40,7 @@ final class IslandHostingView<Content: View>: NSHostingView<Content> {
 
     override func mouseDown(with event: NSEvent) {
         mouseStart = NSEvent.mouseLocation
+        NSCursor.closedHand.set()
         originStart = window?.frame.origin ?? .zero
         didDrag = false
     }
@@ -63,5 +64,6 @@ final class IslandHostingView<Content: View>: NSHostingView<Content> {
         } else if didDrag {
             onDragEnded?()
         }
+        NSCursor.openHand.set()
     }
 }
