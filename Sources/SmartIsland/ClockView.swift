@@ -8,10 +8,12 @@ enum IslandMetrics {
     /// How far the island extends past each side of the notch.
     static let sideOverhang: CGFloat = 10
     static let fontSize: CGFloat = 15
-    /// Radius used for both the shoulder curves (where the island meets the menu bar) and the bottom corners.
-    static let cornerRadius: CGFloat = 32
-    static var shoulderRadius: CGFloat { cornerRadius }
-    static var bottomRadius: CGFloat { cornerRadius }
+    /// How dark the glass is tinted (0 = clear glass, 1 = solid black).
+    static let glassTint: Double = 0.75
+    /// Size of the outward (concave) curve where the island meets the menu bar.
+    static let shoulderRadius: CGFloat = 14
+    /// Radius of the bottom corners.
+    static let bottomRadius: CGFloat = 22
     /// Dropping the island within this many points of the notch snaps it back.
     static let snapDistance: CGFloat = 24
 }
@@ -27,20 +29,24 @@ struct ClockView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var state: IslandState
 
+    private var useGlass: Bool { settings.useGlass }
+
     var body: some View {
         let docked = settings.dragOffset == .zero && !state.isDragging
         ZStack(alignment: .bottom) {
-            IslandShape(
-                shoulderRadius: IslandMetrics.shoulderRadius,
-                bottomRadius: IslandMetrics.bottomRadius,
-                stripHeight: IslandMetrics.height,
-                docked: docked ? 1 : 0
+            IslandBackground(
+                shape: IslandShape(
+                    shoulderRadius: IslandMetrics.shoulderRadius,
+                    bottomRadius: IslandMetrics.bottomRadius,
+                    stripHeight: IslandMetrics.height,
+                    docked: docked ? 1 : 0
+                ),
+                glass: settings.useGlass
             )
-            .fill(Color.black)
 
             Text(clock.text)
                 .font(.system(size: IslandMetrics.fontSize, weight: .semibold, design: .rounded).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(AnyShapeStyle(.white))
                 .lineLimit(1)
                 .contentTransition(.numericText())
                 .animation(.smooth(duration: 0.35), value: clock.text)
@@ -48,6 +54,32 @@ struct ClockView: View {
                 .frame(height: IslandMetrics.height)
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: docked)
+        .animation(.smooth(duration: 0.3), value: settings.useGlass)
+    }
+}
+
+/// Fills the island shape with either solid black (blends with the notch) or Liquid Glass
+/// (lets whatever is underneath show through).
+struct IslandBackground: View {
+    var shape: IslandShape
+    var glass: Bool
+
+    var body: some View {
+        if glass {
+            if #available(macOS 26, *) {
+                ZStack {
+                    Color.clear.glassEffect(.regular, in: shape)
+                    shape.fill(Color.black.opacity(IslandMetrics.glassTint))
+                }
+            } else {
+                ZStack {
+                    Color.clear.background(.ultraThinMaterial, in: shape)
+                    shape.fill(Color.black.opacity(IslandMetrics.glassTint))
+                }
+            }
+        } else {
+            shape.fill(Color.black)
+        }
     }
 }
 

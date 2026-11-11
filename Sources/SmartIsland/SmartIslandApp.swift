@@ -13,6 +13,7 @@ struct SmartIslandApp: App {
             Divider()
             Toggle("24-Hour Time", isOn: $settings.use24Hour)
             Toggle("Show Seconds", isOn: $settings.showSeconds)
+            Toggle("Glass Style", isOn: $settings.useGlass)
             Button("Reset Position") { settings.dragOffset = .zero }
             Divider()
             Toggle("Launch at Login", isOn: Binding(

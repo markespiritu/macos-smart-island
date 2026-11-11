@@ -9,6 +9,7 @@ final class AppSettings: ObservableObject {
         static let isVisible = "isVisible"
         static let use24Hour = "use24Hour"
         static let showSeconds = "showSeconds"
+        static let useGlass = "useGlass"
         static let dragOffsetX = "dragOffsetX"
         static let dragOffsetY = "dragOffsetY"
     }
@@ -27,6 +28,11 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(showSeconds, forKey: Key.showSeconds) }
     }
 
+    /// Liquid Glass island instead of solid black (macOS 26+).
+    @Published var useGlass: Bool {
+        didSet { defaults.set(useGlass, forKey: Key.useGlass) }
+    }
+
     /// Offset of the island from its docked spot under the notch. `.zero` means docked.
     @Published var dragOffset: CGSize {
         didSet {
@@ -41,10 +47,12 @@ final class AppSettings: ObservableObject {
             Key.isVisible: true,
             Key.use24Hour: true,
             Key.showSeconds: false,
+            Key.useGlass: true,
         ])
         isVisible = defaults.bool(forKey: Key.isVisible)
         use24Hour = defaults.bool(forKey: Key.use24Hour)
         showSeconds = defaults.bool(forKey: Key.showSeconds)
+        useGlass = defaults.bool(forKey: Key.useGlass)
         dragOffset = CGSize(
             width: defaults.double(forKey: Key.dragOffsetX),
             height: defaults.double(forKey: Key.dragOffsetY)
