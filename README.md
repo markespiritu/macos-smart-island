@@ -2,7 +2,9 @@
 
 A thin clock that sits right under the MacBook notch, so you can check the time while you keep looking at the camera on a video call.
 
-![The island under the notch, showing 10:41](docs/screenshots/01-island.png)
+![The island under the notch, showing 10:41, with the camera lens and green camera-on light in the notch above it](docs/screenshots/01-island.png)
+
+<sub>macOS screenshots don't include the notch hardware, so the camera lens and green light are drawn in to show how it looks on the real screen.</sub>
 
 Most of the time on a Zoom call your eyes drift to the top-right corner to check the clock, which looks like you've stopped paying attention. Smart Island puts the time just below the webcam instead, as a small extension of the notch, so a glance at the clock still reads as eye contact.
 
