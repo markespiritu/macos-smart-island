@@ -8,7 +8,7 @@ struct SmartIslandApp: App {
     @StateObject private var loginItem = LoginItemModel()
 
     var body: some Scene {
-        MenuBarExtra("Smart Island", systemImage: "clock") {
+        MenuBarExtra("Smart Island", systemImage: "clock.fill") {
             Toggle("Show Clock", isOn: $settings.isVisible)
             Divider()
             Toggle("24-Hour Time", isOn: $settings.use24Hour)
