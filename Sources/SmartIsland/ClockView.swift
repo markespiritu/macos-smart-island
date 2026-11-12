@@ -9,6 +9,12 @@ enum IslandMetrics {
     /// How far the island extends past each side of the notch.
     static let sideOverhang: CGFloat = 10
     static let fontSize: CGFloat = 15
+    /// Size of the clock icon left of the time (~0.85x the font size).
+    static let clockIconSize: CGFloat = 13
+    /// Gap between the clock icon and the time.
+    static let clockIconSpacing: CGFloat = 8
+    /// Opacity of the clock icon (1 = full white, like the time).
+    static let clockIconOpacity: Double = 1.0
     /// How dark the glass is tinted (0 = clear glass, 1 = solid black).
     static let glassTint: Double = 0.75
     /// Opacity the glass fades to at the very bottom of the island (1 = no fade).
@@ -52,15 +58,22 @@ struct ClockView: View {
                 glass: settings.useGlass
             )
 
-            Text(clock.text)
-                .font(.system(size: IslandMetrics.fontSize, weight: .semibold, design: .rounded).monospacedDigit())
-                .foregroundStyle(AnyShapeStyle(.white))
-                .shadow(color: .black.opacity(0.5), radius: 2)
-                .lineLimit(1)
-                .contentTransition(.numericText())
-                .animation(.smooth(duration: 0.35), value: clock.text)
-                .frame(maxWidth: .infinity)
-                .frame(height: IslandMetrics.height)
+            HStack(spacing: IslandMetrics.clockIconSpacing) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: IslandMetrics.clockIconSize, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .opacity(IslandMetrics.clockIconOpacity)
+
+                Text(clock.text)
+                    .font(.system(size: IslandMetrics.fontSize, weight: .semibold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(AnyShapeStyle(.white))
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .animation(.smooth(duration: 0.35), value: clock.text)
+            }
+            .shadow(color: .black.opacity(0.5), radius: 2)
+            .frame(maxWidth: .infinity)
+            .frame(height: IslandMetrics.height)
         }
         // Subtle outline while the island can be grabbed (⌘ held over it).
         .overlay {
